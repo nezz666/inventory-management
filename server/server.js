@@ -32,3 +32,4 @@ mongoose.connect(process.env.MONGO_URI)
   .catch(err => console.log('❌ MongoDB connection error:', err));
 
 console.log('Server initialized with routes for items, incoming, outgoing, and authentication.');
+console.log('Ensure MongoDB is running and .env file is configured with MONGO_URI.');
