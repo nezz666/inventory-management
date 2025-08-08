@@ -30,3 +30,5 @@ mongoose.connect(process.env.MONGO_URI)
     app.listen(5000, () => console.log('✅ Server running on http://localhost:5000'));
   })
   .catch(err => console.log('❌ MongoDB connection error:', err));
+
+console.log('Server initialized with routes for items, incoming, outgoing, and authentication.');
