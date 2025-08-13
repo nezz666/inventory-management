@@ -1,35 +1,27 @@
-const express = require('express');
-const mongoose = require('mongoose');
-const cors = require('cors');
-require('dotenv').config();
-
-// Import routes
-const itemRoutes = require('./routes/itemRoutes');
-const incomingRoutes = require('./routes/incomingRoutes');
-const outgoingRoutes = require('./routes/outgoingRoutes');
-const authRoutes = require('./routes/authRoutes');
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
 
 const app = express();
-app.use(cors());
-app.use(express.json());
 
-// Use routes
-app.use('/api/items', itemRoutes);
-app.use('/api/incoming', incomingRoutes);
-app.use('/api/outgoing', outgoingRoutes);
-app.use('/api', authRoutes);
+app.use(cors({
+  origin: "http://localhost:5173",
+  credentials: true
+}));
 
-// Test route
-app.get('/', (req, res) => {
-  res.send('Inventory Management API is running...');
+app.use(express.json());  // <-- PENTING: harus sebelum route
+
+app.use('/api/items', require('./routes/itemRoutes'));
+app.use('/api', require('./routes/authRoutes'));
+
+app.get('/api/headers', (req, res) => {
+  res.json(req.headers);
 });
 
-// Connect to MongoDB and start server
 mongoose.connect(process.env.MONGO_URI)
-  .then(() => {
-    app.listen(5000, () => console.log('✅ Server running on http://localhost:5000'));
-  })
-  .catch(err => console.log('❌ MongoDB connection error:', err));
+  .then(() => console.log("MongoDB connected"))
+  .catch(err => console.error(err));
 
-console.log('Server initialized with routes for items, incoming, outgoing, and authentication.');
-console.log('Ensure MongoDB is running and .env file is configured with MONGO_URI.');
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`Server running on http://localhost:${PORT}`));

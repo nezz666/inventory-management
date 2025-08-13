@@ -1,7 +1,7 @@
 {
-  "name": "inventory-management-backend",
+  "name": "inventory-management-backend-ready",
   "version": "1.0.0",
-  "description": "Backend for Inventory Management System",
+  "description": "Inventory backend with auth + per-user items",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",

@@ -1,30 +1,67 @@
-import { useState } from 'react';
-import { Input, Button, Stack } from '@chakra-ui/react';
-import axios from 'axios';
+import { useState } from "react";
+import { Button, Input, FormControl, FormLabel, VStack } from "@chakra-ui/react";
+import Cookies from "js-cookie";
+import api from "../api";
 
-export default function ItemForm() {
-  const [item, setItem] = useState({ name: '', category: '', stock: 0 });
-
-  const handleChange = (e) => {
-    setItem({ ...item, [e.target.name]: e.target.value });
-  };
+const ItemForm = ({ onAddSuccess }) => {
+  const [name, setName] = useState("");
+  const [category, setCategory] = useState("");
+  const [stock, setStock] = useState("");
 
   const handleSubmit = async () => {
+    if (!name || !category || !stock) {
+      alert("Semua field harus diisi");
+      return;
+    }
+
     try {
-      await axios.post('http://localhost:5000/api/items', item);
-      alert('Barang ditambahkan!');
-      setItem({ name: '', category: '', stock: 0 });
+      const token = Cookies.get("token"); // Ambil token dari cookies
+      await api.post(
+        "/items",
+        { name, category, stock },
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      // Reset form
+      setName("");
+      setCategory("");
+      setStock("");
+
+      if (onAddSuccess) onAddSuccess(); // refresh tabel
+      alert("Barang berhasil ditambahkan");
     } catch (err) {
-      console.error(err);
+      console.error(err.response?.data || err.message);
+      alert("Gagal menambah barang");
     }
   };
 
   return (
-    <Stack spacing={4}>
-      <Input name="name" placeholder="Nama Barang" value={item.name} onChange={handleChange} />
-      <Input name="category" placeholder="Kategori" value={item.category} onChange={handleChange} />
-      <Input name="stock" type="number" placeholder="Stok Awal" value={item.stock} onChange={handleChange} />
-      <Button colorScheme="teal" onClick={handleSubmit}>Tambah Barang</Button>
-    </Stack>
+    <VStack spacing={3} align="stretch" mb={4}>
+      <FormControl>
+        <FormLabel>Nama Barang</FormLabel>
+        <Input value={name} onChange={(e) => setName(e.target.value)} />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Kategori</FormLabel>
+        <Input value={category} onChange={(e) => setCategory(e.target.value)} />
+      </FormControl>
+      <FormControl>
+        <FormLabel>Stok</FormLabel>
+        <Input
+          type="number"
+          value={stock}
+          onChange={(e) => setStock(e.target.value)}
+        />
+      </FormControl>
+      <Button colorScheme="purple" onClick={handleSubmit}>
+        Tambah Barang
+      </Button>
+    </VStack>
   );
-}
+};
+
+export default ItemForm;
