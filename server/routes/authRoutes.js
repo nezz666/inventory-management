@@ -33,6 +33,7 @@ router.post("/login", async (req, res) => {
 });
 
 // REGISTER
+// REGISTER
 router.post("/register", async (req, res) => {
   try {
     const { username, email, password } = req.body;
@@ -45,7 +46,17 @@ router.post("/register", async (req, res) => {
     const newUser = new User({ username, email, password: hashedPassword });
     await newUser.save();
 
-    res.status(200).json({ msg: "Registrasi berhasil" });
+    const token = jwt.sign(
+      { id: newUser._id, username: newUser.username },
+      process.env.JWT_SECRET,
+      { expiresIn: "1d" }
+    );
+
+    res.status(200).json({ 
+      msg: "Registrasi berhasil", 
+      username: newUser.username,
+      token 
+    });
   } catch (err) {
     res.status(500).json({ msg: err.message });
   }

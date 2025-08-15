@@ -1,11 +1,15 @@
 import { useState, useEffect } from "react";
 import { ChakraProvider, extendTheme } from "@chakra-ui/react";
+import { Routes, Route } from "react-router-dom";
 import Navbar from "./components/Navbar";
 import Sidebar from "./components/Sidebar";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
-import ItemForm from './components/ItemForm';
-import ItemTable from './components/ItemTable';
+import ItemForm from "./components/ItemForm";
+import ItemTable from "./components/ItemTable";
+import EditItemForm from "./components/EditItemForm";
+import Laporan from "./components/Laporan";
+import Dashboard from "./pages/Dashboard";
 import Cookies from "js-cookie";
 import axios from "axios";
 
@@ -22,6 +26,7 @@ function App() {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(true);
   const [items, setItems] = useState([]);
+  const [editingItem, setEditingItem] = useState(null);
 
   useEffect(() => {
     const savedUsername = Cookies.get("username");
@@ -29,16 +34,14 @@ function App() {
     if (savedUsername && token) {
       setUsername(savedUsername);
       setIsLoggedIn(true);
-      fetchItems(token); // langsung fetch kalau sudah login
+      fetchItems(token);
     }
   }, []);
 
   const fetchItems = async (token) => {
     try {
       const res = await axios.get("http://localhost:5000/api/items", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: { Authorization: `Bearer ${token}` },
       });
       setItems(res.data);
     } catch (err) {
@@ -58,6 +61,7 @@ function App() {
   return (
     <ChakraProvider theme={theme}>
       {!isLoggedIn ? (
+        // Halaman Login/Register
         <div
           style={{
             minHeight: "100vh",
@@ -104,6 +108,7 @@ function App() {
           </div>
         </div>
       ) : (
+        // Halaman setelah login
         <div
           style={{
             minHeight: "100vh",
@@ -121,29 +126,72 @@ function App() {
           <div style={{ display: "flex", flex: 1 }}>
             {isSidebarOpen && <Sidebar />}
             <main style={{ flex: 1, padding: 24 }}>
-              <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
-                Inventory Management
-              </h1>
-              <p style={{ marginBottom: 16 }}>
-                Selamat datang, <b>{username}</b>!
-              </p>
-              <ItemForm onAddSuccess={() => fetchItems(Cookies.get("token"))} />
-              <ItemTable
-                items={items}
-                onRefresh={() => fetchItems(Cookies.get("token"))}
-                onDelete={async (id) => {
-                  try {
-                    await axios.delete(`http://localhost:5000/api/items/${id}`, {
-                      headers: {
-                        Authorization: `Bearer ${Cookies.get("token")}`,
-                      },
-                    });
-                    fetchItems(Cookies.get("token"));
-                  } catch (err) {
-                    alert("Gagal menghapus item");
+              <Routes>
+                {/* Dashboard */}
+                <Route
+                  path="/barang"
+                  element={
+                    <>
+                      <h1 style={{ fontSize: 24, fontWeight: "bold", marginBottom: 16 }}>
+                        Inventory Management
+                      </h1>
+                      <p style={{ marginBottom: 16 }}>
+                        Selamat datang, <b>{username}</b>!
+                      </p>
+                      {editingItem ? (
+                        <EditItemForm
+                          item={editingItem}
+                          onUpdate={async (updated) => {
+                            try {
+                              await axios.put(
+                                `http://localhost:5000/api/items/${editingItem._id}`,
+                                updated,
+                                {
+                                  headers: {
+                                    Authorization: `Bearer ${Cookies.get("token")}`,
+                                  },
+                                }
+                              );
+                              setEditingItem(null);
+                              fetchItems(Cookies.get("token"));
+                            } catch (err) {
+                              alert("Gagal update item");
+                            }
+                          }}
+                          onCancel={() => setEditingItem(null)}
+                        />
+                      ) : (
+                        <>
+                          <ItemForm onAddSuccess={() => fetchItems(Cookies.get("token"))} />
+                          <ItemTable
+                            items={items}
+                            onRefresh={() => fetchItems(Cookies.get("token"))}
+                            onDelete={async (id) => {
+                              try {
+                                await axios.delete(
+                                  `http://localhost:5000/api/items/${id}`,
+                                  {
+                                    headers: {
+                                      Authorization: `Bearer ${Cookies.get("token")}`,
+                                    },
+                                  }
+                                );
+                                fetchItems(Cookies.get("token"));
+                              } catch (err) {
+                                alert("Gagal menghapus item");
+                              }
+                            }}
+                            onEdit={setEditingItem}
+                          />
+                        </>
+                      )}
+                    </>
                   }
-                }}
-              />
+                />
+                {/* Laporan */}
+                <Route path="/laporan" element={<Laporan />} />
+                <Route path="/dashboard" element={<Dashboard />} />
+              </Routes>
             </main>
           </div>
         </div>

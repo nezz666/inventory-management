@@ -17,7 +17,7 @@ const ItemTable = ({ items = [], onRefresh, onEdit, onDelete }) => {
   };
 
   return (
-    <Table variant="striped" colorScheme="purple">
+    <Table variant="unstyled" colorScheme="purple">
       <Thead>
         <Tr>
           <Th>Nama</Th>
