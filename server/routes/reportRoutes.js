@@ -1,8 +1,8 @@
 // server/routes/reportRoutes.js
 const express = require("express");
 const router = express.Router();
-const Incoming = require("../models/Incoming"); // model barang masuk
-const Outgoing = require("../models/Outgoing"); // model barang keluar
+const Incoming = require("../models/BarangMasuk"); // model barang masuk
+const Outgoing = require("../models/BarangKeluar"); // model barang keluar
 
 // GET laporan filter barang masuk/keluar
 router.get("/", async (req, res) => {

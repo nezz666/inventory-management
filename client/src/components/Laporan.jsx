@@ -1,10 +1,6 @@
 import { useState } from "react";
 import axios from "axios";
 import {
-  Box,
-  Heading,
-  Select,
-  Input,
   Button,
   Table,
   Thead,
@@ -12,98 +8,137 @@ import {
   Tr,
   Th,
   Td,
-  useColorModeValue
+  Select,
+  Input,
+  useColorModeValue,
+  Box,
+  VStack,
+  HStack,
+  Text,
+  Divider,
 } from "@chakra-ui/react";
+import { Card, CardHeader, CardContent } from "@/components/ui/card";
 
-export default function Laporan() {
-  const [type, setType] = useState("masuk");
+const Laporan = () => {
+  const [type, setType] = useState("Barang Masuk");
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
   const [data, setData] = useState([]);
-
-  const bgCard = useColorModeValue("whiteAlpha.800", "gray.800");
-  const borderColor = useColorModeValue("purple.300", "purple.600");
+  const [totalQuantity, setTotalQuantity] = useState(0);
 
   const handleSearch = async () => {
-    try {
-      const res = await axios.get("/api/reports", {
-        params: { type, startDate, endDate },
-      });
-      setData(res.data);
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  try {
+    console.log("🔎 Searching with params:", { type, startDate, endDate });
+
+    const params = {};
+    if (type) params.type = type;
+    if (startDate) params.startDate = startDate;
+    if (endDate) params.endDate = endDate;
+
+    const res = await axios.get("http://localhost:5000/api/laporan", { params });
+
+    console.log("✅ Response data:", res.data);
+    setData(res.data);
+
+    // Hitung total jumlah
+    const total = res.data.reduce((acc, item) => acc + (item.jumlah || 0), 0);
+    setTotalQuantity(total);
+  } catch (error) {
+    console.error("❌ Error ambil data laporan:", error.response || error.message);
+    alert("Gagal mengambil data laporan: " + (error.response?.data?.message || error.message));
+  }
+};
+
 
   return (
-    <Box p={5}>
-      <Heading size="lg" mb={4}>
-        Laporan
-      </Heading>
+    <Box
+      p={6}
+      minH="100vh"
+      bg={useColorModeValue("gray.100", "gray.900")}
+      display="flex"
+      justifyContent="center"
+      alignItems="flex-start"
+    >
+      <Card className="w-full max-w-5xl shadow-xl backdrop-blur-lg bg-opacity-30">
+        <CardHeader>
+          <Text fontSize="2xl" fontWeight="bold" textAlign="center">
+            Laporan Barang
+            
+          </Text>
+        </CardHeader>
+        <CardContent>
+          <VStack spacing={4} align="stretch">
+            {/* Filter */}
+            <HStack spacing={4}>
+              <Select value={type} onChange={(e) => setType(e.target.value)}>
+              <option value="Barang Masuk">Barang Masuk</option>
+              <option value="Barang Keluar">Barang Keluar</option>
+              </Select>
+              <Input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+              />
+              <Input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+              />
 
-      {/* Filter Form */}
-      <Box
-        p={4}
-        bg={bgCard}
-        borderRadius="xl"
-        border="1px solid"
-        borderColor={borderColor}
-        mb={6}
-      >
-        <Select value={type} onChange={(e) => setType(e.target.value)} mb={3}>
-          <option value="masuk">Barang Masuk</option>
-          <option value="keluar">Barang Keluar</option>
-        </Select>
+              <Button colorScheme="purple" onClick={handleSearch}>
+                Cari
+              </Button>
+            </HStack>
 
-        <Input
-          type="date"
-          value={startDate}
-          onChange={(e) => setStartDate(e.target.value)}
-          mb={3}
-        />
-        <Input
-          type="date"
-          value={endDate}
-          onChange={(e) => setEndDate(e.target.value)}
-          mb={3}
-        />
+            <Divider />
 
-        <Button colorScheme="purple" w="full" onClick={handleSearch}>
-          Cari
-        </Button>
-      </Box>
+            {/* Info Total */}
+            <Box
+              p={4}
+              borderRadius="lg"
+              bg={useColorModeValue("purple.50", "purple.900")}
+              textAlign="center"
+            >
+              <Text fontSize="lg" fontWeight="semibold">
+                Total Quantity:{" "}
+                <span style={{ color: "#815ad5ff", fontWeight: "bold" }}>
+                  {totalQuantity}
+                </span>
+              </Text>
+            </Box>
 
-      {/* Tabel Laporan */}
-      <Table variant="simple" colorScheme="purple">
-        <Thead>
-          <Tr>
-            <Th>Nama Barang</Th>
-            <Th>Jumlah</Th>
-            <Th>Tanggal</Th>
-          </Tr>
-        </Thead>
-        <Tbody>
-          {data.length > 0 ? (
-            data.map((item, i) => (
-              <Tr key={i}>
-                <Td>{item.itemId?.name || "-"}</Td>
-                <Td>{item.quantity}</Td>
-                <Td>
-                  {item.date
-                    ? new Date(item.date).toLocaleDateString()
-                    : "-"}
-                </Td>
+            {/* Tabel */}
+            <Table variant="simple" size="md">
+              <Thead>
+                <Tr>
+                  <Th>Nama Barang</Th>
+                  <Th>Jumlah</Th>
+                  <Th>Tanggal</Th>
+                </Tr>
+              </Thead>
+              <Tbody>
+              {data.length > 0 ? (
+              data.map((item) => (
+              <Tr key={item._id}>
+              <Td>{item.namaBarang}</Td>
+              <Td>{item.jumlah}</Td>
+              <Td>{new Date(item.tanggal).toLocaleDateString()}</Td>
               </Tr>
-            ))
-          ) : (
-            <Tr>
-              <Td colSpan="3" textAlign="center">
-                Tidak ada data
+              ))
+              ) : (
+              <Tr>
+              <Td colSpan="3" style={{ textAlign: "center" }}>
+              Tidak ada data
               </Td>
-            </Tr>
-          )}
-        </Tbody>
-      </Table>
+              </Tr>
+              )}
+              </Tbody>
+            </Table>
+          </VStack>
+        </CardContent>
+      </Card>
     </Box>
   );
-}
+};
+
+export default Laporan;
