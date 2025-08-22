@@ -1,8 +1,9 @@
-// routes/dashboard.js
 const express = require("express");
 const router = express.Router();
-const { getDashboardData } = require("../controllers/dashboardController");
+const dashboardController = require("../controllers/dashboardController");
 
-router.get("/", getDashboardData);
+// definisi route pakai controller
+router.get("/summary", dashboardController.getSummary);
+router.get("/series", dashboardController.getSeries);
 
 module.exports = router;

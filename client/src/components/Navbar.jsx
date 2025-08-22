@@ -2,7 +2,7 @@ import { Box, Flex, Button, Text } from "@chakra-ui/react";
 
 export default function Navbar({ username, onToggleSidebar, onLogout }) {
   return (
-    <Flex as="nav" align="center" justify="space-between" p={4} bg="purple.700" color="white">
+    <Flex as="nav" align="center" justify="space-between" p={4} bg="purple.900" color="white">
       <Button onClick={onToggleSidebar} colorScheme="purple" variant="outline">
         ☰
       </Button>

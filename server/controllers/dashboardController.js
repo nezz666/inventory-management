@@ -1,60 +1,102 @@
 const BarangMasuk = require("../models/BarangMasuk");
 const BarangKeluar = require("../models/BarangKeluar");
 
-exports.getDashboardData = async (req, res) => {
+// 🔹 Summary Data
+exports.getSummary = async (req, res) => {
   try {
-    const { startDate, endDate } = req.query;
+    let { startDate, endDate } = req.query;
 
-    let filter = {};
-    if (startDate && endDate) {
-      filter.tanggal = {
-        $gte: new Date(startDate),
-        $lte: new Date(endDate)
-      };
+    // default: hari ini
+    if (!startDate || !endDate) {
+      const today = new Date();
+      startDate = new Date(today.setHours(0, 0, 0, 0));
+      endDate = new Date(today.setHours(23, 59, 59, 999));
+    } else {
+      startDate = new Date(startDate)
+      startDate.setHours(0, 0, 0, 0); // awal hari
+      endDate = new Date(endDate)
+      endDate.setHours(23, 59, 59, 999); // akhir hari
     }
 
-    // Hitung total masuk & keluar
-    const totalMasuk = await BarangMasuk.aggregate([
+    const filter = { tanggal: { $gte: startDate, $lte: endDate } };
+
+    const masuk = await BarangMasuk.aggregate([
       { $match: filter },
-      { $group: { _id: null, total: { $sum: "$jumlah" } } }
+      { $group: { _id: null, total: { $sum: "$jumlah" } } },
     ]);
 
-    const totalKeluar = await BarangKeluar.aggregate([
+    const keluar = await BarangKeluar.aggregate([
       { $match: filter },
-      { $group: { _id: null, total: { $sum: "$jumlah" } } }
+      { $group: { _id: null, total: { $sum: "$jumlah" } } },
     ]);
 
-    // Data tren harian
-    const trenMasuk = await BarangMasuk.aggregate([
-      { $match: filter },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$tanggal" } },
-          total: { $sum: "$jumlah" }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
-
-    const trenKeluar = await BarangKeluar.aggregate([
-      { $match: filter },
-      {
-        $group: {
-          _id: { $dateToString: { format: "%Y-%m-%d", date: "$tanggal" } },
-          total: { $sum: "$jumlah" }
-        }
-      },
-      { $sort: { _id: 1 } }
-    ]);
 
     res.json({
-      totalMasuk: totalMasuk[0]?.total || 0,
-      totalKeluar: totalKeluar[0]?.total || 0,
-      trenMasuk,
-      trenKeluar
+      startDate: startDate.toISOString().split("T")[0],
+      endDate: endDate.toISOString().split("T")[0],
+      masuk: masuk[0]?.total || 0,
+      keluar: keluar[0]?.total || 0,
     });
   } catch (err) {
-    console.error("❌ Error Dashboard:", err);
-    res.status(500).json({ message: "Terjadi kesalahan server", error: err.message });
+    console.error("Summary error:", err.message);
+    res.status(500).json({ message: "Gagal ambil summary" });
+  }
+};
+
+// 🔹 Series Data (harian)
+exports.getSeries = async (req, res) => {
+  try {
+    let { startDate, endDate } = req.query;
+
+    // default: hari ini
+    if (!startDate || !endDate) {
+      const today = new Date();
+      startDate = new Date(today.setHours(0, 0, 0, 0));
+      endDate = new Date(today.setHours(23, 59, 59, 999));
+    } else {
+      startDate = new Date(startDate)
+      startDate.setHours(0, 0, 0, 0); // awal hari
+      endDate = new Date(endDate)
+      endDate.setHours(23, 59, 59, 999); // akhir hari
+    }
+
+    const filter = { tanggal: { $gte: startDate, $lte: endDate } };
+
+    const masuk = await BarangMasuk.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$tanggal" } },
+          total: { $sum: "$jumlah" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    const keluar = await BarangKeluar.aggregate([
+      { $match: filter },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$tanggal" } },
+          total: { $sum: "$jumlah" },
+        },
+      },
+      { $sort: { _id: 1 } },
+    ]);
+
+    // gabungkan masuk & keluar
+    const map = {};
+    masuk.forEach((m) => {
+      map[m._id] = { date: m._id, masuk: m.total, keluar: 0 };
+    });
+    keluar.forEach((k) => {
+      if (!map[k._id]) map[k._id] = { date: k._id, masuk: 0, keluar: 0 };
+      map[k._id].keluar = k.total;
+    });
+
+    res.json(Object.values(map));
+  } catch (err) {
+    console.error("Series error:", err.message);
+    res.status(500).json({ message: "Gagal ambil series" });
   }
 };
